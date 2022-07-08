@@ -8,6 +8,9 @@ In this example we load data correlating horsepower and miles per gallon.
 Then we will train a neural net from the data to be able to predict
 MPG from new horsepower
 
+
+This is a 'regression' problem.
+
  */
 
 async function getData() {
@@ -51,6 +54,7 @@ async function run() {
     await trainModel(model, inputs, labels)
     console.log("done training")
 
+    testModel(model, data, tensorData)
 }
 
 function convertToTensor(data) {
@@ -123,6 +127,35 @@ function createModel() {
     // add an output layer. units:1 because we want to output one number
     model.add(tf.layers.dense({units:1, useBias: true}))
     return model
+}
+
+function testModel(model, inputData, normData) {
+    const {inputMax, inputMin, labelMin, labelMax} = normData
+
+    const [xs, preds] = tf.tidy(()=>{
+        // make 100 new example data points
+        const xs = tf.linspace(0,1,100)
+        // make predictions
+        const preds = model.predict(xs.reshape([100,1]))
+
+        // un-normalize the data
+        const unNormXs = xs.mul(inputMax.sub(inputMin)).add(inputMin)
+        const unNormPrds = preds.mul(labelMax.sub(labelMin)).add(labelMin)
+        //data sync converts the tensor back to a normal JS typedarray
+        //'sync' means synchronous, not synchronize
+        return [unNormXs.dataSync(), unNormPrds.dataSync()]
+    })
+
+    const predicted_points = Array.from(xs).map((val,i)=> ({x:val, y:preds[i]}))
+    const orig_points = inputData.map(d => ({x:d.horsepower, y:d.mpg}))
+
+    tfvis.render.scatterplot(
+        {name:'pred vs orig'},
+        {values: [orig_points, predicted_points], series:['original','predicti']},
+        {
+            xLabel: 'HP', yLabel: 'MPG', height:300
+        }
+    )
 }
 
 
