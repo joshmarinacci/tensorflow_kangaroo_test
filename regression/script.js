@@ -13,6 +13,8 @@ This is a 'regression' problem.
 
  */
 
+console.log("fixing something")
+
 async function getData() {
     const carsDataResponse = await fetch("https://storage.googleapis.com/tfjs-tutorials/carsData.json")
     const carsData = await carsDataResponse.json()
